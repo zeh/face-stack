@@ -1,4 +1,6 @@
 use std::path::PathBuf;
+
+use glob::glob;
 use structopt::StructOpt;
 
 fn parse_image_dimensions(s: &str) -> Result<(u32, u32), String> {
@@ -32,4 +34,11 @@ fn main() {
     let (target_width, target_height) = opt.dimensions;
 
     println!("Will get files from {:?}, at size {}x{}, and output at {:?}.", opt.input, target_width, target_height, opt.output);
+
+    // Reads all images from the given input mask
+    for entry in glob(&opt.input).expect(format!("Failed to read glob pattern: {}", opt.input).as_str()) {
+        if let Ok(path) = entry {
+            println!("Reading {:?}", &path);
+        }
+    }
 }
