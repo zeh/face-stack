@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use glob::glob;
 use image::{ImageBuffer, Pixel, Rgb, RgbImage};
+use rust_faces::{BlazeFaceParams, FaceDetection, FaceDetectorBuilder, InferParams, Provider, ToArray3, ToRgb8};
 use structopt::StructOpt;
 
 use blending::{blend_pixel, BlendingMode};
@@ -63,16 +64,48 @@ fn main() {
 
     println!("Will get files from {:?}, at size {}x{}, and output at {:?}.", opt.input, target_width, target_height, opt.output);
 
+    let face_detector =
+        // Alternative:
+        // FaceDetectorBuilder::new(FaceDetection::MtCnn(
+        //     MtCnnParams {
+        //         min_face_size: 1000,
+        //         ..Default::default()
+        //     }))
+        FaceDetectorBuilder::new(FaceDetection::BlazeFace640(
+            BlazeFaceParams {
+                // Default is 1280, but finds no images
+                // 80 works too
+                target_size: 160,
+                ..Default::default()
+            }))
+            .download()
+            .infer_params(InferParams {
+                provider: Provider::OrtCpu,
+                intra_threads: Some(5),
+                ..Default::default()
+            })
+            .build()
+            .expect("Failed to load the face detector");
+
     let mut output_image: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_pixel(target_width, target_height, Rgb([0, 0, 0]));
+    let mut num_images_used = 0;
 
     // Reads all images from the given input mask
     for entry in glob(&opt.input).expect(format!("Failed to read glob pattern: {}", opt.input).as_str()) {
         if let Ok(path) = entry {
             println!("Reading {:?}", &path);
             if let Ok(img) = image::open(&path) {
-                let rgb_image = img.into_rgb8();
-                println!("...size: {:?}x{:?}", &rgb_image.width(), &rgb_image.height());
-                blend_image(&mut output_image, &rgb_image, (0, 0));
+                let array3_image = img.into_rgb8().into_array3();
+                let faces = face_detector.detect(array3_image.view().into_dyn()).unwrap();
+
+                let rgb_image = array3_image.to_rgb8();
+                println!("...size: {:?}x{:?}, faces: {}", &rgb_image.width(), &rgb_image.height(), faces.len());
+
+                if faces.len() == 1 {
+                    println!("...face: {:?}", faces[0].rect.to_xywh());
+                    blend_image(&mut output_image, &rgb_image, (num_images_used * 20, num_images_used * 20));
+                    num_images_used += 1;
+                }
             }
         }
     }
