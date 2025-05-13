@@ -4,6 +4,7 @@ use glob::glob;
 use image::{ImageBuffer, Rgb};
 use structopt::StructOpt;
 
+pub mod blending;
 
 /**
  * Parses a dimensions string (999x999) into a (u32, u32) width/height tuple.
