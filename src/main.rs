@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
 use glob::glob;
-use image::{ImageBuffer, Rgb};
+use image::{ImageBuffer, Pixel, Rgb, RgbImage};
 use structopt::StructOpt;
+
+use blending::{blend_pixel, BlendingMode};
 
 pub mod blending;
 
@@ -17,6 +19,25 @@ fn parse_image_dimensions(s: &str) -> Result<(u32, u32), String> {
     let width = parts[0].parse::<u32>().map_err(|_| "Invalid width")?;
     let height = parts[1].parse::<u32>().map_err(|_| "Invalid height")?;
     Ok((width, height))
+}
+
+/**
+ * Copy one image on top of another
+ */
+fn blend_image(bottom: &mut RgbImage, top: &RgbImage, offset: (i32, i32)) {
+    let src_x1 = if offset.0 < 0 { -offset.0 as u32 } else { 0 };
+    let src_x2 = top.width().min(bottom.width() - (offset.0 as u32));
+    let src_y1 = if offset.1 < 0 { -offset.1 as u32 } else { 0 };
+    let src_y2 = top.height().min(bottom.height() - (offset.1 as u32));
+
+    for y in src_y1..src_y2 {
+        for x in src_x1..src_x2 {
+            let bottom_px: [u8; 3] = bottom.get_pixel(x, y).channels().to_owned().try_into().expect("converting pixels to array");
+            let top_px: [u8; 3] = top.get_pixel(x, y).channels().to_owned().try_into().expect("converting pixels to array");
+            let blended = blend_pixel(&[bottom_px[0], bottom_px[1], bottom_px[2]], &[top_px[0], top_px[1], top_px[2]], 0.5, &BlendingMode::Normal);
+            bottom.put_pixel(x, y, Rgb(blended));
+        }
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -47,6 +68,14 @@ fn main() {
     for entry in glob(&opt.input).expect(format!("Failed to read glob pattern: {}", opt.input).as_str()) {
         if let Ok(path) = entry {
             println!("Reading {:?}", &path);
+            if let Ok(img) = image::open(&path) {
+                let rgb_image = img.into_rgb8();
+                println!("...size: {:?}x{:?}", &rgb_image.width(), &rgb_image.height());
+                blend_image(&mut output_image, &rgb_image, (0, 0));
+            }
         }
     }
+
+    // Finally, saved the final image
+    output_image.save(&opt.output).expect("Failed to save output image");
 }
