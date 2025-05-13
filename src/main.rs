@@ -4,6 +4,10 @@ use glob::glob;
 use image::{ImageBuffer, Rgb};
 use structopt::StructOpt;
 
+
+/**
+ * Parses a dimensions string (999x999) into a (u32, u32) width/height tuple.
+ */
 fn parse_image_dimensions(s: &str) -> Result<(u32, u32), String> {
     let parts: Vec<&str> = s.split('x').collect();
     if parts.len() != 2 {
