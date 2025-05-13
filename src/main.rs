@@ -30,12 +30,13 @@ fn blend_image(bottom: &mut RgbImage, top: &RgbImage, offset: (i32, i32)) {
     let src_y1 = if offset.1 < 0 { -offset.1 as u32 } else { 0 };
     let src_y2 = top.height().min(bottom.height() - (offset.1 as u32));
 
-    for y in src_y1..src_y2 {
-        for x in src_x1..src_x2 {
-            let bottom_px: [u8; 3] = bottom.get_pixel(x, y).channels().to_owned().try_into().expect("converting pixels to array");
-            let top_px: [u8; 3] = top.get_pixel(x, y).channels().to_owned().try_into().expect("converting pixels to array");
+    for src_y in src_y1..src_y2 {
+        let dst_y = (src_y as i32 + offset.1) as u32;
+        for src_x in src_x1..src_x2 {
+            let bottom_px: [u8; 3] = bottom.get_pixel(src_x, src_y).channels().to_owned().try_into().expect("converting pixels to array");
+            let top_px: [u8; 3] = top.get_pixel(src_x, src_y).channels().to_owned().try_into().expect("converting pixels to array");
             let blended = blend_pixel(&[bottom_px[0], bottom_px[1], bottom_px[2]], &[top_px[0], top_px[1], top_px[2]], 0.5, &BlendingMode::Normal);
-            bottom.put_pixel(x, y, Rgb(blended));
+            bottom.put_pixel((src_x as i32 + offset.0) as u32, dst_y, Rgb(blended));
         }
     }
 }
