@@ -23,7 +23,7 @@ struct Opt {
 
     /// Output image dimensions (e.g., "800x600")
     #[structopt(long, default_value = "1024x1024", parse(try_from_str = parse_image_dimensions))]
-    dimensions: (u32, u32),
+    size: (u32, u32),
 
     /// Output file name (e.g., "output.png")
     #[structopt(long, default_value = "face-stack-output.jpg", parse(from_os_str))]
@@ -32,7 +32,7 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let (target_width, target_height) = opt.dimensions;
+    let (target_width, target_height) = opt.size;
 
     println!("Will get files from {:?}, at size {}x{}, and output at {:?}.", opt.input, target_width, target_height, opt.output);
 
