@@ -8,6 +8,7 @@ use structopt::StructOpt;
 use blending::{blend_pixel, BlendingMode};
 
 pub mod blending;
+pub mod terminal;
 
 /**
  * Parses a dimensions string (999x999) into a (u32, u32) width/height tuple.
