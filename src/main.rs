@@ -117,6 +117,7 @@ fn main() {
     // Create the output image
     let mut output_image: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_pixel(target_width, target_height, Rgb([127, 127, 127]));
     let mut num_images_used = 0;
+    let mut num_images_read = 0;
 
     // Reads all images from the given input mask
     let image_files = glob(&opt.input).expect(format!("Failed to read glob pattern: {}", opt.input).as_str()).collect::<Vec::<Result<PathBuf, GlobError>>>();
@@ -125,7 +126,7 @@ fn main() {
         if let Ok(path) = image_file {
             // File can be opened
             terminal::erase_line_to_end();
-            print!("({}/{}) Reading {:?}", num_images_used + 1, image_files.len(), &path);
+            print!("({}/{}) Reading {:?}", num_images_read + 1, image_files.len(), &path);
 
             if let Ok(img) = image::open(&path) {
                 // Is a valid image file
@@ -169,6 +170,8 @@ fn main() {
                 println!("; invalid image, skipping.");
             }
         }
+
+        num_images_read += 1;
     }
 
     terminal::erase_line_to_end();
