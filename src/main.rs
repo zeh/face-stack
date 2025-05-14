@@ -115,7 +115,7 @@ fn main() {
     let target_faces_rect = (faces_rect_inside.0 * typical_face_scale, faces_rect_inside.1 * typical_face_scale);
 
     // Create the output image
-    let mut output_image: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_pixel(target_width, target_height, Rgb([0, 0, 0]));
+    let mut output_image: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_pixel(target_width, target_height, Rgb([127, 127, 127]));
     let mut num_images_used = 0;
 
     // Reads all images from the given input mask
