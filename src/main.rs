@@ -70,6 +70,10 @@ struct Opt {
     #[structopt(long, default_value = "1024x1024", parse(try_from_str = parse_image_dimensions))]
     size: (u32, u32),
 
+    /// Scale of the face (e.g., "0.5")
+    #[structopt(long, default_value = "1")]
+    face_scale: f32,
+
     /// Output file name (e.g., "output.png")
     #[structopt(long, default_value = "face-stack-output.jpg", parse(from_os_str))]
     output: PathBuf,
@@ -107,7 +111,7 @@ fn main() {
     // Decide where the face will be in the output image
     let typical_face_size = (75f32, 100f32); // Typically 0.75 aspect ratio
     let faces_rect_inside = fit_inside((target_width as f32, target_height as f32), typical_face_size);
-    let typical_face_scale = 0.6f32;
+    let typical_face_scale = 0.6f32 * opt.face_scale;
     let target_faces_rect = (faces_rect_inside.0 * typical_face_scale, faces_rect_inside.1 * typical_face_scale);
 
     // Create the output image
