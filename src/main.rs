@@ -12,6 +12,7 @@ use geom::{WHf, WHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi, xywhf_t
 
 pub mod blending;
 pub mod geom;
+pub mod rng;
 pub mod terminal;
 
 /**
