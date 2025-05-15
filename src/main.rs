@@ -30,7 +30,13 @@ fn parse_image_dimensions(s: &str) -> Result<(u32, u32), String> {
 /**
  * Copy one image on top of another
  */
-fn blend_image(bottom: &mut RgbImage, top: &RgbImage, offset: (i32, i32), opacity: f64) {
+fn blend_image(
+	bottom: &mut RgbImage,
+	top: &RgbImage,
+	offset: (i32, i32),
+	opacity: f64,
+	blending_mode: &BlendingMode,
+) {
 	let src_x1 = if offset.0 < 0 {
 		-offset.0 as u32
 	} else {
@@ -64,7 +70,7 @@ fn blend_image(bottom: &mut RgbImage, top: &RgbImage, offset: (i32, i32), opacit
 				&[bottom_px[0], bottom_px[1], bottom_px[2]],
 				&[top_px[0], top_px[1], top_px[2]],
 				opacity,
-				&BlendingMode::Normal,
+				blending_mode,
 			);
 			bottom.put_pixel(dst_x, dst_y, Rgb(blended));
 		}
@@ -136,6 +142,18 @@ fn main() {
 	let mut num_images_used = 0usize;
 	let mut num_images_read = 0usize;
 
+	let all_blending_modes = vec![
+		BlendingMode::Multiply,
+		BlendingMode::Screen,
+		BlendingMode::Overlay,
+		BlendingMode::Darken,
+		BlendingMode::Lighten,
+		BlendingMode::ColorDodge,
+		BlendingMode::ColorBurn,
+		BlendingMode::HardLight,
+		BlendingMode::SoftLight,
+	];
+
 	// Reads all images from the given input mask
 	let image_files = glob(&opt.input)
 		.expect(format!("Failed to read glob pattern: {}", opt.input).as_str())
@@ -184,12 +202,23 @@ fn main() {
 						target_height as f32 / 2.0 - (face_rect.y + face_rect.height / 2.0) * new_image_scale,
 					);
 					let offset_i32 = (offset.0.round() as i32, offset.1.round() as i32);
-					blend_image(
-						&mut output_image,
-						&resized_image,
-						offset_i32,
-						1f64 / (num_images_used as f64 + 1f64),
-					);
+					if num_images_used == 0 {
+						blend_image(
+							&mut output_image,
+							&resized_image,
+							offset_i32,
+							1.0,
+							&BlendingMode::Normal,
+						);
+					} else {
+						blend_image(
+							&mut output_image,
+							&resized_image,
+							offset_i32,
+							0.25, // 1f64 / (num_images_used as f64 + 1f64),
+							&all_blending_modes[num_images_used % all_blending_modes.len()],
+						);
+					}
 					num_images_used += 1;
 
 					terminal::cursor_up();
