@@ -8,7 +8,7 @@ use rust_faces::{
 use structopt::StructOpt;
 
 use blending::{BlendingMode, blend_pixel, pixel_u8_to_f32};
-use geom::{WHf, WHi, XYi, fit_inside, whf_to_whi, xyf_to_xyi};
+use geom::{WHf, WHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi, xywhf_to_xywhi, xywhi_to_xywhf};
 
 pub mod blending;
 pub mod geom;
@@ -37,25 +37,24 @@ fn blend_image(
 	opacity: f32,
 	blending_mode: &BlendingMode,
 ) {
-	let src_x1 = if top_offset.0 < 0 {
-		-top_offset.0 as u32
-	} else {
-		0
-	};
-	let src_x2 = top.width().min((bottom.width() as i32 - top_offset.0) as u32) - 1;
-	let src_y1 = if top_offset.1 < 0 {
-		-top_offset.1 as u32
-	} else {
-		0
-	};
-	let src_y2 = top.height().min((bottom.height() as i32 - top_offset.1) as u32) - 1;
+	let bottom_rect = xywhi_to_xywhf((0, 0, bottom.width(), bottom.height()));
+	let top_rect = xywhi_to_xywhf((top_offset.0, top_offset.1, top.width(), top.height()));
+	let intersection = intersect(bottom_rect, top_rect);
+	if intersection.is_none() {
+		panic!("Cannot blend image; no intersection between bottom and top image.");
+	}
+	let intersection_rect = xywhf_to_xywhi(intersection.unwrap());
+	let dst_x1 = intersection_rect.0;
+	let dst_y1 = intersection_rect.1;
+	let dst_x2 = intersection_rect.0 + intersection_rect.2 as i32 - 1;
+	let dst_y2 = intersection_rect.1 + intersection_rect.3 as i32 - 1;
 
-	for src_y in src_y1..src_y2 {
-		let dst_y = (src_y as i32 + top_offset.1) as u32;
-		for src_x in src_x1..src_x2 {
-			let dst_x = (src_x as i32 + top_offset.0) as u32;
+	for dst_y in dst_y1..dst_y2 {
+		let src_y = (dst_y - top_offset.1) as u32;
+		for dst_x in dst_x1..dst_x2 {
+			let src_x = (dst_x - top_offset.0) as u32;
 			let bottom_px: [f32; 3] = bottom
-				.get_pixel(dst_x, dst_y)
+				.get_pixel(dst_x as u32, dst_y as u32)
 				.channels()
 				.to_owned()
 				.try_into()
@@ -67,7 +66,7 @@ fn blend_image(
 				.try_into()
 				.expect("converting pixels to array");
 			let blended = blend_pixel(&bottom_px, &pixel_u8_to_f32(&top_px), opacity, blending_mode);
-			bottom.put_pixel(dst_x, dst_y, Rgb(blended));
+			bottom.put_pixel(dst_x as u32, dst_y as u32, Rgb(blended));
 		}
 	}
 }
