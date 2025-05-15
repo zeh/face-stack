@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use glob::{GlobError, glob};
-use image::{ImageBuffer, Pixel, Rgb, RgbImage, imageops};
+use image::{ImageBuffer, Pixel, Rgb, Rgb32FImage, RgbImage, imageops};
 use rust_faces::{
 	BlazeFaceParams, FaceDetection, FaceDetectorBuilder, InferParams, Provider, ToArray3, ToRgb8,
 };
 use structopt::StructOpt;
 
-use blending::{BlendingMode, blend_pixel};
+use blending::{BlendingMode, blend_pixel, pixel_u8_to_f32};
 use geom::fit_inside;
 
 pub mod blending;
@@ -31,10 +31,10 @@ fn parse_image_dimensions(s: &str) -> Result<(u32, u32), String> {
  * Copy one image on top of another
  */
 fn blend_image(
-	bottom: &mut RgbImage,
+	bottom: &mut Rgb32FImage,
 	top: &RgbImage,
 	offset: (i32, i32),
-	opacity: f64,
+	opacity: f32,
 	blending_mode: &BlendingMode,
 ) {
 	let src_x1 = if offset.0 < 0 {
@@ -54,7 +54,7 @@ fn blend_image(
 		let dst_y = (src_y as i32 + offset.1) as u32;
 		for src_x in src_x1..src_x2 {
 			let dst_x = (src_x as i32 + offset.0) as u32;
-			let bottom_px: [u8; 3] = bottom
+			let bottom_px: [f32; 3] = bottom
 				.get_pixel(dst_x, dst_y)
 				.channels()
 				.to_owned()
@@ -66,12 +66,7 @@ fn blend_image(
 				.to_owned()
 				.try_into()
 				.expect("converting pixels to array");
-			let blended = blend_pixel(
-				&[bottom_px[0], bottom_px[1], bottom_px[2]],
-				&[top_px[0], top_px[1], top_px[2]],
-				opacity,
-				blending_mode,
-			);
+			let blended = blend_pixel(&bottom_px, &pixel_u8_to_f32(&top_px), opacity, blending_mode);
 			bottom.put_pixel(dst_x, dst_y, Rgb(blended));
 		}
 	}
@@ -137,8 +132,8 @@ fn main() {
 		(faces_rect_inside.0 * typical_face_scale, faces_rect_inside.1 * typical_face_scale);
 
 	// Create the output image
-	let mut output_image: ImageBuffer<Rgb<u8>, Vec<u8>> =
-		ImageBuffer::from_pixel(target_width, target_height, Rgb([127, 127, 127]));
+	let mut output_image: Rgb32FImage =
+		ImageBuffer::from_pixel(target_width, target_height, Rgb([0.5, 0.5, 0.5]));
 	let mut num_images_used = 0usize;
 	let mut num_images_read = 0usize;
 
@@ -236,6 +231,15 @@ fn main() {
 	terminal::erase_line_to_end();
 	println!("Done. {} images processed, with {} valid images used.", image_files.len(), num_images_used);
 
+	// Convert the output image from Rgb-32f to Rgb-u8
+	let mut output_u8 = RgbImage::new(output_image.width(), output_image.height());
+	{
+		for (x, y, pixel) in output_image.enumerate_pixels() {
+			let scaled = pixel.0.map(|v| (v * 255.0).round().clamp(0.0, 255.0) as u8);
+			output_u8.put_pixel(x, y, Rgb(scaled));
+		}
+	}
+
 	// Finally, saved the final image
-	output_image.save(&opt.output).expect("Failed to save output image");
+	output_u8.save(&opt.output).expect("Failed to save output image");
 }

@@ -32,7 +32,7 @@ pub enum BlendingMode {
 
 impl BlendingMode {
 	#[inline(always)]
-	pub fn blend(&self, bottom: f64, top: f64) -> f64 {
+	pub fn blend(&self, bottom: f32, top: f32) -> f32 {
 		match self {
 			Self::Normal => top,
 			Self::Multiply => bottom * top,
@@ -91,7 +91,7 @@ impl BlendingMode {
 	/// Interpolates between the bottom color, and the resulting
 	/// color if the top color was applied with this blend mode
 	#[inline(always)]
-	pub fn blend_with_opacity(&self, bottom: f64, top: f64, opacity: f64) -> f64 {
+	pub fn blend_with_opacity(&self, bottom: f32, top: f32, opacity: f32) -> f32 {
 		return if opacity == 0.0 {
 			bottom
 		} else {
@@ -108,36 +108,24 @@ impl Default for BlendingMode {
 }
 
 #[inline(always)]
-pub fn blend_pixel(bottom: &[u8], top: &[u8], opacity: f64, blending_mode: &BlendingMode) -> [u8; 3] {
+pub fn blend_pixel(bottom: &[f32], top: &[f32], opacity: f32, blending_mode: &BlendingMode) -> [f32; 3] {
 	if opacity == 0.0 {
 		[bottom[0], bottom[1], bottom[2]]
 	} else {
 		[
-			channel_f64_to_u8(blending_mode.blend_with_opacity(
-				channel_u8_to_f64(bottom[0]),
-				channel_u8_to_f64(top[0]),
-				opacity,
-			)),
-			channel_f64_to_u8(blending_mode.blend_with_opacity(
-				channel_u8_to_f64(bottom[1]),
-				channel_u8_to_f64(top[1]),
-				opacity,
-			)),
-			channel_f64_to_u8(blending_mode.blend_with_opacity(
-				channel_u8_to_f64(bottom[2]),
-				channel_u8_to_f64(top[2]),
-				opacity,
-			)),
+			blending_mode.blend_with_opacity(bottom[0], top[0], opacity),
+			blending_mode.blend_with_opacity(bottom[1], top[1], opacity),
+			blending_mode.blend_with_opacity(bottom[2], top[2], opacity),
 		]
 	}
 }
 
 #[inline(always)]
-fn channel_f64_to_u8(color: f64) -> u8 {
-	(color * 255.0).round() as u8
+pub fn channel_u8_to_f32(color: u8) -> f32 {
+	color as f32 / 255.0
 }
 
 #[inline(always)]
-fn channel_u8_to_f64(color: u8) -> f64 {
-	color as f64 / 255.0
+pub fn pixel_u8_to_f32(colors: &[u8; 3]) -> [f32; 3] {
+	[channel_u8_to_f32(colors[0]), channel_u8_to_f32(colors[1]), channel_u8_to_f32(colors[2])]
 }
