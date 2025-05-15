@@ -145,11 +145,16 @@ fn main() {
 		if let Ok(path) = image_file {
 			// File can be opened
 			terminal::erase_line_to_end();
-			print!("({}/{}) Reading {:?}", num_images_read + 1, image_files.len(), &path);
+			print!(
+				"({}/{}) Reading {:?}",
+				num_images_read + 1,
+				image_files.len(),
+				&path.file_name().unwrap()
+			);
 
 			if let Ok(img) = image::open(&path) {
 				// Is a valid image file
-				print!(", size {:?}x{:?}", img.width(), img.height());
+				print!(", {:?}x{:?}", img.width(), img.height());
 				let array3_image = img.into_rgb8().into_array3();
 				let faces = face_detector.detect(array3_image.view().into_dyn()).unwrap();
 				let rgb_image = array3_image.to_rgb8();
