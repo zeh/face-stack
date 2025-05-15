@@ -8,8 +8,10 @@ use rust_faces::{
 use structopt::StructOpt;
 
 use blending::{BlendingMode, blend_pixel};
+use geom::fit_inside;
 
 pub mod blending;
+pub mod geom;
 pub mod terminal;
 
 /**
@@ -66,21 +68,6 @@ fn blend_image(bottom: &mut RgbImage, top: &RgbImage, offset: (i32, i32), opacit
 			);
 			bottom.put_pixel(dst_x, dst_y, Rgb(blended));
 		}
-	}
-}
-
-/**
- * Find the expected scale to fit a rectangle (w, h) inside another.
- */
-fn fit_inside(outside_rect: (f32, f32), inside_rect: (f32, f32)) -> (f32, f32) {
-	let inside_ar = inside_rect.0 / inside_rect.1;
-	let outside_ar = outside_rect.0 / outside_rect.1;
-	if inside_ar > outside_ar {
-		// Inside rect width is "wider" than outside: fit by its width
-		(outside_rect.0, outside_rect.0 / inside_ar)
-	} else {
-		// Inside rect width is "taller" than outside: fit by its height
-		(outside_rect.1 * inside_ar, outside_rect.1)
 	}
 }
 
