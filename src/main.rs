@@ -9,7 +9,7 @@ use rust_faces::{
 use structopt::StructOpt;
 
 use blending::{BlendingMode, blend_pixel, pixel_u8_to_f32};
-use geom::{WHf, WHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi};
+use geom::{WHf, WHi, XYWHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi};
 
 pub mod blending;
 pub mod geom;
@@ -38,14 +38,27 @@ fn blend_image(
 	top_offset: XYi,
 	opacity: f32,
 	blending_mode: &BlendingMode,
+	mask: Option<XYWHi>,
 ) {
+	// Find paintable intersection between bottom and top
 	let bottom_rect = (0, 0, bottom.width(), bottom.height());
 	let top_rect = (top_offset.0, top_offset.1, top.width(), top.height());
 	let intersection = intersect(bottom_rect, top_rect);
 	if intersection.is_none() {
 		panic!("Cannot blend image; no intersection between bottom and top image.");
 	}
-	let intersection_rect = intersection.unwrap();
+	let mut intersection_rect = intersection.unwrap();
+
+	// Applies further intersection if a mask is present
+	if let Some(mask) = mask {
+		let mask_intersection = intersect(intersection.unwrap(), mask);
+		if mask_intersection.is_none() {
+			// panic!("Cannot blend image; no intersection between blended and mask.");
+			return;
+		}
+		intersection_rect = mask_intersection.unwrap();
+	}
+
 	let dst_x1 = intersection_rect.0;
 	let dst_y1 = intersection_rect.1;
 	let dst_x2 = intersection_rect.0 + intersection_rect.2 as i32 - 1;
@@ -71,6 +84,29 @@ fn blend_image(
 			bottom.put_pixel(dst_x as u32, dst_y as u32, Rgb(blended));
 		}
 	}
+}
+
+/**
+ * Create a random crop rectangle for the image
+ */
+fn get_crop_rect(rng: &mut Rng, canvas_width: u32, canvas_height: u32) -> XYWHi {
+	let min_w = (canvas_width as f32 * 0.25).round() as u32;
+	let max_w = (canvas_width as f32 * 0.75).round() as u32;
+	let min_h = (canvas_height as f32 * 0.05).round() as u32;
+	let max_h = (canvas_height as f32 * 0.1).round() as u32;
+
+	let w = rng.next_u32_range(min_w, max_w);
+	let h = rng.next_u32_range(min_h, max_h);
+
+	let min_x = 0;
+	let max_x = canvas_width - w;
+	let min_y = 0;
+	let max_y = canvas_height - h;
+
+	let x = rng.next_u32_range(min_x, max_x) as i32;
+	let y = rng.next_u32_range(min_y, max_y) as i32;
+
+	(x, y, w, h)
 }
 
 #[derive(Debug, StructOpt)]
@@ -212,7 +248,14 @@ fn main() {
 						target_height as f32 / 2.0 - (face_rect.y + face_rect.height / 2.0) * new_image_scale,
 					));
 					if num_images_used == 0 {
-						blend_image(&mut output_image, &resized_image, offset, 1.0, &BlendingMode::Normal);
+						blend_image(
+							&mut output_image,
+							&resized_image,
+							offset,
+							1.0,
+							&BlendingMode::Normal,
+							Some(get_crop_rect(&mut rng, target_width, target_height)),
+						);
 					} else {
 						blend_image(
 							&mut output_image,
@@ -220,6 +263,7 @@ fn main() {
 							offset,
 							0.25, // 1f64 / (num_images_used as f64 + 1f64),
 							&all_blending_modes[num_images_used % all_blending_modes.len()],
+							Some(get_crop_rect(&mut rng, target_width, target_height)),
 						);
 					}
 					num_images_used += 1;
