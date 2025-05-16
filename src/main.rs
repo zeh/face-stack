@@ -128,9 +128,13 @@ struct Opt {
 	#[structopt(long, default_value = "face-stack-output.jpg", parse(from_os_str))]
 	output: PathBuf,
 
-	/// The seed to use for the pseudorandom number generator, between `1` and `4294967295`.
+	/// The seed to use for the pseudorandom number generator, between `1` and `4294967295`
 	#[structopt(long, default_value = "0")]
 	seed: u32,
+
+	/// Opacity for each new layer when blending images
+	#[structopt(long, default_value = "0.5")]
+	opacity: f32,
 }
 
 fn main() {
@@ -261,7 +265,7 @@ fn main() {
 							&mut output_image,
 							&resized_image,
 							offset,
-							0.25, // 1f64 / (num_images_used as f64 + 1f64),
+							opt.opacity,
 							&all_blending_modes[num_images_used % all_blending_modes.len()],
 							Some(get_crop_rect(&mut rng, target_width, target_height)),
 						);
