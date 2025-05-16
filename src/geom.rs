@@ -4,6 +4,7 @@ pub type XYWHf = (f32, f32, f32, f32);
 
 pub type XYi = (i32, i32);
 pub type WHi = (u32, u32);
+pub type XYXYi = (i32, i32, i32, i32);
 pub type XYWHi = (i32, i32, u32, u32);
 
 /**
@@ -24,20 +25,14 @@ pub fn fit_inside(outside_rect: WHf, inside_rect: WHf) -> WHf {
 /**
  * Find the intersection rectangle between two rectangles
  */
-pub fn intersect(rect1: XYWHf, rect2: XYWHf) -> Option<XYWHf> {
-	assert!(rect1.2 >= 0.0);
-	assert!(rect1.3 >= 0.0);
-	assert!(rect2.2 >= 0.0);
-	assert!(rect2.3 >= 0.0);
-	let xyxy1 = (rect1.0, rect1.1, rect1.0 + rect1.2, rect1.1 + rect1.3);
-	let xyxy2 = (rect2.0, rect2.1, rect2.0 + rect2.2, rect2.1 + rect2.3);
-
+pub fn intersect(rect1: XYWHi, rect2: XYWHi) -> Option<XYWHi> {
+	let xyxy1: XYXYi = (rect1.0, rect1.1, rect1.0 + rect1.2 as i32, rect1.1 + rect1.3 as i32);
+	let xyxy2: XYXYi = (rect2.0, rect2.1, rect2.0 + rect2.2 as i32, rect2.1 + rect2.3 as i32);
 	let xyxyi = (xyxy1.0.max(xyxy2.0), xyxy1.1.max(xyxy2.1), xyxy1.2.min(xyxy2.2), xyxy1.3.min(xyxy2.3));
-
 	if xyxyi.0 > xyxyi.2 || xyxyi.1 > xyxyi.3 {
 		None
 	} else {
-		Some((xyxyi.0, xyxyi.1, xyxyi.2 - xyxyi.0, xyxyi.3 - xyxyi.1))
+		Some((xyxyi.0, xyxyi.1, (xyxyi.2 - xyxyi.0) as u32, (xyxyi.3 - xyxyi.1) as u32))
 	}
 }
 

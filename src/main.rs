@@ -9,7 +9,7 @@ use rust_faces::{
 use structopt::StructOpt;
 
 use blending::{BlendingMode, blend_pixel, pixel_u8_to_f32};
-use geom::{WHf, WHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi, xywhf_to_xywhi, xywhi_to_xywhf};
+use geom::{WHf, WHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi};
 
 pub mod blending;
 pub mod geom;
@@ -39,13 +39,13 @@ fn blend_image(
 	opacity: f32,
 	blending_mode: &BlendingMode,
 ) {
-	let bottom_rect = xywhi_to_xywhf((0, 0, bottom.width(), bottom.height()));
-	let top_rect = xywhi_to_xywhf((top_offset.0, top_offset.1, top.width(), top.height()));
+	let bottom_rect = (0, 0, bottom.width(), bottom.height());
+	let top_rect = (top_offset.0, top_offset.1, top.width(), top.height());
 	let intersection = intersect(bottom_rect, top_rect);
 	if intersection.is_none() {
 		panic!("Cannot blend image; no intersection between bottom and top image.");
 	}
-	let intersection_rect = xywhf_to_xywhi(intersection.unwrap());
+	let intersection_rect = intersection.unwrap();
 	let dst_x1 = intersection_rect.0;
 	let dst_y1 = intersection_rect.1;
 	let dst_x2 = intersection_rect.0 + intersection_rect.2 as i32 - 1;
