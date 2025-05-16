@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use glob::{GlobError, glob};
 use image::{ImageBuffer, Pixel, Rgb, Rgb32FImage, RgbImage, imageops};
+use rng::Rng;
 use rust_faces::{
 	BlazeFaceParams, FaceDetection, FaceDetectorBuilder, InferParams, Provider, ToArray3, ToRgb8,
 };
@@ -90,6 +91,10 @@ struct Opt {
 	/// Output file name (e.g., "output.png")
 	#[structopt(long, default_value = "face-stack-output.jpg", parse(from_os_str))]
 	output: PathBuf,
+
+	/// The seed to use for the pseudorandom number generator, between `1` and `4294967295`.
+	#[structopt(long, default_value = "0")]
+	seed: u32,
 }
 
 fn main() {
@@ -136,6 +141,15 @@ fn main() {
 		ImageBuffer::from_pixel(target_width, target_height, Rgb([0.5, 0.5, 0.5]));
 	let mut num_images_used = 0usize;
 	let mut num_images_read = 0usize;
+
+	// Creates a random number generator to be used for deterministic randomization
+	let rng_seed = if opt.seed == 0 {
+		Rng::new().next()
+	} else {
+		// Seeds close to each other produce very similar results, so we multiply them a bit
+		opt.seed.wrapping_add(Rng::from_seed(1337).next())
+	};
+	let mut rng = Rng::from_seed(rng_seed);
 
 	let all_blending_modes = vec![
 		BlendingMode::Multiply,
