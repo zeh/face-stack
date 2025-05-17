@@ -8,7 +8,7 @@ fn get_random_range(rng: &mut Rng, min: f64, pseudo_max: f64) -> f64 {
 	rng.next_f64_range(min, pseudo_max)
 }
 
-fn get_random_entry_weighted<'a, T>(rng: &mut Rng, entries: &'a Vec<WeightedValue<T>>) -> &'a T {
+pub fn get_random_entry_weighted<'a, T>(rng: &mut Rng, entries: &'a Vec<WeightedValue<T>>) -> &'a T {
 	let total_weight = entries.iter().map(|r| r.weight).sum();
 	let desired_position = get_random_range(rng, 0.0, total_weight);
 	let mut acc = 0.0f64;

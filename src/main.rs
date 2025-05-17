@@ -10,8 +10,10 @@ use structopt::StructOpt;
 
 use blending::{BlendingMode, blend_pixel, pixel_u8_to_f32};
 use geom::{WHf, WHi, XYWHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi};
-use parsing::{parse_image_dimensions, parse_weighted_float_pair, parse_weighted_size_pair};
-use random::{get_random_range_weighted, get_random_size_range_weighted};
+use parsing::{
+	parse_image_dimensions, parse_weighted_blending_mode, parse_weighted_float_pair, parse_weighted_size_pair,
+};
+use random::{get_random_entry_weighted, get_random_range_weighted, get_random_size_range_weighted};
 use units::{SizeUnit, WeightedValue};
 
 pub mod blending;
@@ -113,6 +115,11 @@ struct Opt {
 	/// Height for the crop rectangle of new blended layes
 	#[structopt(long, default_value = "0%-100%", parse(try_from_str = parse_weighted_size_pair))]
 	crop_height: Vec<WeightedValue<(SizeUnit, SizeUnit)>>,
+
+	/// Blending mode(s) to be used when overlaying images
+	/// Possible values: `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`
+	#[structopt(long, default_value = "normal", default_value = "normal", parse(try_from_str = parse_weighted_blending_mode))]
+	blending_mode: Vec<WeightedValue<BlendingMode>>,
 }
 
 fn main() {
@@ -168,18 +175,6 @@ fn main() {
 		opt.seed.wrapping_add(Rng::from_seed(1337).next())
 	};
 	let mut rng = Rng::from_seed(rng_seed);
-
-	let all_blending_modes = vec![
-		BlendingMode::Multiply,
-		BlendingMode::Screen,
-		BlendingMode::Overlay,
-		BlendingMode::Darken,
-		BlendingMode::Lighten,
-		BlendingMode::ColorDodge,
-		BlendingMode::ColorBurn,
-		BlendingMode::HardLight,
-		BlendingMode::SoftLight,
-	];
 
 	// Reads all images from the given input mask
 	let image_files = glob(&opt.input)
@@ -240,31 +235,22 @@ fn main() {
 							crop_height,
 						)
 					};
-
-					// Finally, blend it all
-					let offset: XYi = xyf_to_xyi((
+					let param_blending_mode = get_random_entry_weighted(&mut rng, &opt.blending_mode);
+					let param_offset: XYi = xyf_to_xyi((
 						target_width as f32 / 2.0 - (face_rect.x + face_rect.width / 2.0) * new_image_scale,
 						target_height as f32 / 2.0 - (face_rect.y + face_rect.height / 2.0) * new_image_scale,
 					));
-					if num_images_used == 0 {
-						blend_image(
-							&mut output_image,
-							&resized_image,
-							offset,
-							1.0,
-							&BlendingMode::Normal,
-							Some(param_crop_rect),
-						);
-					} else {
-						blend_image(
-							&mut output_image,
-							&resized_image,
-							offset,
-							param_opacity,
-							&all_blending_modes[num_images_used % all_blending_modes.len()],
-							Some(param_crop_rect),
-						);
-					}
+
+					// Finally, blend it all
+					blend_image(
+						&mut output_image,
+						&resized_image,
+						param_offset,
+						param_opacity,
+						param_blending_mode,
+						Some(param_crop_rect),
+					);
+
 					num_images_used += 1;
 
 					terminal::cursor_up();

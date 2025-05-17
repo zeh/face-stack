@@ -1,6 +1,10 @@
 // Originally (partly) from https://github.com/zeh/random-art-generator/blob/main/src/generator/utils/parsing.rs
+use std::str::FromStr;
 
-use crate::units::{SizeUnit, WeightedValue};
+use crate::{
+	blending::BlendingMode,
+	units::{SizeUnit, WeightedValue},
+};
 
 /// Parses a dimensions string (999x999) into a (u32, u32) width/height tuple.
 pub fn parse_image_dimensions(s: &str) -> Result<(u32, u32), String> {
@@ -95,6 +99,20 @@ pub fn parse_weighted_float_pair(src: &str) -> Result<WeightedValue<(f64, f64)>,
 				weight,
 			}),
 			Err(err) => Err(err),
+		},
+		Err(err) => Err(err),
+	}
+}
+
+/// Parses a blending mode with a weight (e.g. "normal", "screen@2") into a WeightedValue<>
+pub fn parse_weighted_blending_mode(src: &str) -> Result<WeightedValue<BlendingMode>, &str> {
+	match parse_weight(src) {
+		Ok((src_value, weight)) => match BlendingMode::from_str(src_value) {
+			Ok(value) => Ok(WeightedValue {
+				value,
+				weight,
+			}),
+			Err(_) => Err("Cannot parse value variant for blending mode"),
 		},
 		Err(err) => Err(err),
 	}
