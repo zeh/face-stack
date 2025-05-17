@@ -110,7 +110,7 @@ fn get_crop_rect(rng: &mut Rng, canvas_width: u32, canvas_height: u32) -> XYWHi 
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "face-align-composite", about = "Composite face-aligned images.")]
+#[structopt(name = "face-stack", about = "Stacks face-aligned images.")]
 struct Opt {
 	/// File mask (e.g., "images/*.jpg")
 	#[structopt(long, default_value = "*.jpg")]
