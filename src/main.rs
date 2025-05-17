@@ -10,9 +10,9 @@ use structopt::StructOpt;
 
 use blending::{BlendingMode, blend_pixel, pixel_u8_to_f32};
 use geom::{WHf, WHi, XYWHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi};
-use parsing::{parse_image_dimensions, parse_weighted_float_pair};
-use random::get_random_range_weighted;
-use units::WeightedValue;
+use parsing::{parse_image_dimensions, parse_weighted_float_pair, parse_weighted_size_pair};
+use random::{get_random_range_weighted, get_random_size_range_weighted};
+use units::{SizeUnit, WeightedValue};
 
 pub mod blending;
 pub mod geom;
@@ -79,29 +79,6 @@ fn blend_image(
 	}
 }
 
-/**
- * Create a random crop rectangle for the image
- */
-fn get_crop_rect(rng: &mut Rng, canvas_width: u32, canvas_height: u32) -> XYWHi {
-	let min_w = (canvas_width as f32 * 0.25).round() as u32;
-	let max_w = (canvas_width as f32 * 0.75).round() as u32;
-	let min_h = (canvas_height as f32 * 0.05).round() as u32;
-	let max_h = (canvas_height as f32 * 0.1).round() as u32;
-
-	let w = rng.next_u32_range(min_w, max_w);
-	let h = rng.next_u32_range(min_h, max_h);
-
-	let min_x = 0;
-	let max_x = canvas_width - w;
-	let min_y = 0;
-	let max_y = canvas_height - h;
-
-	let x = rng.next_u32_range(min_x, max_x) as i32;
-	let y = rng.next_u32_range(min_y, max_y) as i32;
-
-	(x, y, w, h)
-}
-
 #[derive(Debug, StructOpt)]
 #[structopt(name = "face-stack", about = "Stacks face-aligned images.")]
 struct Opt {
@@ -128,6 +105,14 @@ struct Opt {
 	/// Opacity for each new layer when blending images
 	#[structopt(long, default_value = "0.5", parse(try_from_str = parse_weighted_float_pair))]
 	opacity: Vec<WeightedValue<(f64, f64)>>,
+
+	/// Width for the crop rectangle of new blended layes
+	#[structopt(long, default_value = "0%-100%", parse(try_from_str = parse_weighted_size_pair))]
+	crop_width: Vec<WeightedValue<(SizeUnit, SizeUnit)>>,
+
+	/// Height for the crop rectangle of new blended layes
+	#[structopt(long, default_value = "0%-100%", parse(try_from_str = parse_weighted_size_pair))]
+	crop_height: Vec<WeightedValue<(SizeUnit, SizeUnit)>>,
 }
 
 fn main() {
@@ -241,6 +226,20 @@ fn main() {
 
 					// Get all the options
 					let param_opacity = get_random_range_weighted(&mut rng, &opt.opacity) as f32;
+					let param_crop_rect = {
+						let crop_width =
+							get_random_size_range_weighted(&mut rng, &opt.crop_width, target_width).round()
+								as u32;
+						let crop_height =
+							get_random_size_range_weighted(&mut rng, &opt.crop_height, target_height).round()
+								as u32;
+						(
+							rng.next_u32_range(0, target_width - crop_width) as i32,
+							rng.next_u32_range(0, target_height - crop_height) as i32,
+							crop_width,
+							crop_height,
+						)
+					};
 
 					// Finally, blend it all
 					let offset: XYi = xyf_to_xyi((
@@ -254,7 +253,7 @@ fn main() {
 							offset,
 							1.0,
 							&BlendingMode::Normal,
-							Some(get_crop_rect(&mut rng, target_width, target_height)),
+							Some(param_crop_rect),
 						);
 					} else {
 						blend_image(
@@ -263,7 +262,7 @@ fn main() {
 							offset,
 							param_opacity,
 							&all_blending_modes[num_images_used % all_blending_modes.len()],
-							Some(get_crop_rect(&mut rng, target_width, target_height)),
+							Some(param_crop_rect),
 						);
 					}
 					num_images_used += 1;
