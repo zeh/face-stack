@@ -170,15 +170,16 @@ fn main() {
 	let mut rng = Rng::from_seed(rng_seed);
 
 	let all_blending_modes = vec![
-		BlendingMode::Multiply,
-		BlendingMode::Screen,
-		BlendingMode::Overlay,
-		BlendingMode::Darken,
-		BlendingMode::Lighten,
-		BlendingMode::ColorDodge,
-		BlendingMode::ColorBurn,
-		BlendingMode::HardLight,
-		BlendingMode::SoftLight,
+		BlendingMode::Normal,
+		// BlendingMode::Multiply,
+		// BlendingMode::Screen,
+		// BlendingMode::Overlay,
+		// BlendingMode::Darken,
+		// BlendingMode::Lighten,
+		// BlendingMode::ColorDodge,
+		// BlendingMode::ColorBurn,
+		// BlendingMode::HardLight,
+		// BlendingMode::SoftLight,
 	];
 
 	// Reads all images from the given input mask
