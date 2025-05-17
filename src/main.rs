@@ -10,13 +10,17 @@ use structopt::StructOpt;
 
 use blending::{BlendingMode, blend_pixel, pixel_u8_to_f32};
 use geom::{WHf, WHi, XYWHi, XYi, fit_inside, intersect, whf_to_whi, xyf_to_xyi};
-use parsing::parse_image_dimensions;
+use parsing::{parse_image_dimensions, parse_weighted_float_pair};
+use random::get_random_range_weighted;
+use units::WeightedValue;
 
 pub mod blending;
 pub mod geom;
 pub mod parsing;
+pub mod random;
 pub mod rng;
 pub mod terminal;
+pub mod units;
 
 /**
  * Copy one image on top of another
@@ -122,8 +126,8 @@ struct Opt {
 	seed: u32,
 
 	/// Opacity for each new layer when blending images
-	#[structopt(long, default_value = "0.5")]
-	opacity: f32,
+	#[structopt(long, default_value = "0.5", parse(try_from_str = parse_weighted_float_pair))]
+	opacity: Vec<WeightedValue<(f64, f64)>>,
 }
 
 fn main() {
@@ -235,6 +239,9 @@ fn main() {
 					let resized_image =
 						imageops::resize(&rgb_image, new_image_size.0, new_image_size.1, imageops::Lanczos3);
 
+					// Get all the options
+					let param_opacity = get_random_range_weighted(&mut rng, &opt.opacity) as f32;
+
 					// Finally, blend it all
 					let offset: XYi = xyf_to_xyi((
 						target_width as f32 / 2.0 - (face_rect.x + face_rect.width / 2.0) * new_image_scale,
@@ -254,7 +261,7 @@ fn main() {
 							&mut output_image,
 							&resized_image,
 							offset,
-							opt.opacity,
+							param_opacity,
 							&all_blending_modes[num_images_used % all_blending_modes.len()],
 							Some(get_crop_rect(&mut rng, target_width, target_height)),
 						);
