@@ -5,7 +5,7 @@ A simple command line application in Rust to create a stack of face images.
 Unless you're debugging something, I recommend running with `--release` so everything is faster.
 
 * Run: `cargo run --release`
-* Run with parameters: `cargo run --release -- --input /something/*.jpg --size 1024x1024 --face-scale 0.5 --opacity 0.9 --seed 123 --output result.jpg --crop-width 50% --crop-height 60% --blending-mode screen`
+* Run with parameters: `cargo run --release -- --input /something/*.jpg --size 1024x1024 --face-scale 0.5 --opacity 0.9 --seed 123 --output result.jpg --crop-width 50% --crop-height 60% --blending-mode screen --max-images 10`
 * See basic parameters: `cargo run --release -- --help`
 
 Some properties accept multiple values, with weights.

@@ -120,6 +120,10 @@ struct Opt {
 	/// Possible values: `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`
 	#[structopt(long, default_value = "normal", default_value = "normal", parse(try_from_str = parse_weighted_blending_mode))]
 	blending_mode: Vec<WeightedValue<BlendingMode>>,
+
+	/// Number of maximum valid images to use for input
+	#[structopt(long, default_value = "0")]
+	max_images: u32,
 }
 
 fn main() {
@@ -263,6 +267,12 @@ fn main() {
 		}
 
 		num_images_read += 1;
+
+		if opt.max_images > 0 && num_images_read >= opt.max_images as usize {
+			terminal::erase_line_to_end();
+			println!("Reached the maximum number of input images; skipping additional files.");
+			break;
+		}
 	}
 
 	terminal::erase_line_to_end();
