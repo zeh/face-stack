@@ -6,15 +6,21 @@ use crate::{
 	units::{SizeUnit, WeightedValue},
 };
 
+fn parse_integer(src: &str) -> Result<u32, &str> {
+	src.parse::<u32>().or(Err("Could not parse integer value"))
+}
+
+fn parse_integer_list(src: &str, divider: char) -> Result<Vec<u32>, &str> {
+	src.split(divider).collect::<Vec<&str>>().iter().map(|&e| parse_integer(e)).collect()
+}
+
 /// Parses a dimensions string (999x999) into a (u32, u32) width/height tuple.
-pub fn parse_image_dimensions(s: &str) -> Result<(u32, u32), String> {
-	let parts: Vec<&str> = s.split('x').collect();
-	if parts.len() != 2 {
-		return Err("Invalid image dimensions; use WIDTHxHEIGHT".to_string());
+pub fn parse_image_dimensions(src: &str) -> Result<(u32, u32), &str> {
+	let values = parse_integer_list(&src, 'x')?;
+	match values.len() {
+		2 => Ok((values[0], values[1])),
+		_ => Err("Dimensions should use WIDTHxHEIGHT"),
 	}
-	let width = parts[0].parse::<u32>().map_err(|_| "Invalid width")?;
-	let height = parts[1].parse::<u32>().map_err(|_| "Invalid height")?;
-	Ok((width, height))
 }
 
 fn parse_float(src: &str) -> Result<f64, &str> {
