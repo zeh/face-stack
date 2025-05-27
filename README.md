@@ -2,6 +2,8 @@
 
 A simple command line application in Rust to create a stack of face images.
 
+The idea was to analyze hundreds of my face pictures, creating an amalgamation of it to be used as a profile picture. See [this blog post](https://zehfernando.com/2025/stack-those-faces-with-face-stack/) for more details.
+
 Unless you're debugging something, I recommend running with `--release` so everything is faster.
 
 * Run: `cargo run --release`
