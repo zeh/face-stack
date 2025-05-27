@@ -201,13 +201,13 @@ fn main() {
 				print!(", {:?}x{:?}", img.width(), img.height());
 				let array3_image = img.into_rgb8().into_array3();
 				let faces = face_detector.detect(array3_image.view().into_dyn()).unwrap();
-				let rgb_image = array3_image.to_rgb8();
 				print!(", {} faces", faces.len());
 
 				if faces.len() == 1 {
 					// Has a valid face
 					println!(", confidence {:?}", faces[0].confidence);
 
+					let rgb_image = array3_image.to_rgb8();
 					let face_rect = &faces[0].rect;
 
 					// Find out what the face size should be inside our face target box
@@ -268,7 +268,7 @@ fn main() {
 
 		num_images_read += 1;
 
-		if opt.max_images > 0 && num_images_read >= opt.max_images as usize {
+		if opt.max_images > 0 && num_images_used >= opt.max_images as usize {
 			terminal::erase_line_to_end();
 			println!("Reached the maximum number of input images; skipping additional files.");
 			break;
